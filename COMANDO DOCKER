@@ -1,0 +1,28 @@
+# Rodar container Postgre na versão 16.3
+docker run --name correiodb -p 5433:5433 -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=correios --network correio-network postgres:16.3
+docker run --name correiodb -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=correios --network correio-network postgres:16.3
+
+# para ver se foi criado
+docker ps
+
+# Verificar quanto tem
+docker ps -a
+
+# Rodar Pgadmin 4
+docker run --name pgadmin4 -p 15432:80 -e PGADMIN_DEFAULT_EMAIL=admin@admin.com -e PGADMIN_DEFAULT_PASSWORD=admin --network correio-network dpage/pgadmin4
+
+# Mostrar porta disponivel
+netstat -aof
+
+netstat -aof | findstr 5432
+
+# Remover container
+docker container rm pgadmin4
+
+# Ver container que foram parados
+docker ps -a
+
+# Testar error cep não encontrado
+curl localhost:8080/zipCode/4444
+
+localhost:8080/zipCode/4444 -v

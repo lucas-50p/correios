@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: correiosapi
+  datasource:
+    url: jdbc:postgresql://localhost:5432/correios
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update # Atualiza o banco de dados com base nas entidades
+    #     ddl-auto: none
+    properties:
+      hibernate.format_sql: true
+
+server:
+  error:
+    include-message: always
+
+setup:
+  on:
+    startup: true
+  origin:
+    url: https://github.com/miltonhit/miltonhit/raw/main/public-assets/cep-20190602.csv
+
