@@ -11,8 +11,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class Endereco {
 
-//    @Id
-//    private Long id;  // Defina uma chave primária, como um Long, Integer, etc.
     @Id
     private String zipCode;
     private String rua;

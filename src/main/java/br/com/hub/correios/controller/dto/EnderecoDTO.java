@@ -15,8 +15,6 @@ public class EnderecoDTO {
             this.estado = estado;
         }
 
-        // Getters and Setters
-
         public String getZipCode() {
             return zipCode;
         }

@@ -9,9 +9,11 @@ import br.com.hub.correios.repository.ConsultaLogRepository;
 import br.com.hub.correios.service.CorreiosService;
 import jakarta.websocket.server.PathParam;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
 
@@ -31,23 +33,20 @@ public class CorreioController {
     }
 
     @GetMapping("/zipCode/{zipCode}")
-    public EnderecoDTO getEnderecoCep(@PathVariable("zipCode") String zipCode) throws NoContentException, NoReadyException {
-//        // TODO apagar
-////        Endereco endereco = new Endereco();
-////        endereco.setZipCode(zipCode);
-////        return endereco;
-//        return this.correiosService.getEnderecoZipCode(zipCode);
+    public ResponseEntity<EnderecoDTO> getEnderecoCep(@PathVariable("zipCode") String zipCode) throws NoContentException, NoReadyException {
 
-        // Consultando o endereço
-        Endereco endereco = this.correiosService.getEnderecoZipCode(zipCode);
+        try{
+            // Consultando o endereço
+            EnderecoDTO enderecoDTO = this.correiosService.getEnderecoZipCode(zipCode);
 
-        // Criando o DTO
-        EnderecoDTO enderecoDTO = new EnderecoDTO(endereco.getZipCode(), endereco.getRua(), endereco.getDistrito(), endereco.getCidade(), endereco.getEstado());
+            // Gravando o log da consulta no banco de dados
+            ConsultaLog log = new ConsultaLog(zipCode, enderecoDTO, LocalDateTime.now());
+            consultaLogRepository.save(log);
 
-        // Gravando o log da consulta no banco de dados
-        ConsultaLog log = new ConsultaLog(zipCode, enderecoDTO, LocalDateTime.now());
-        consultaLogRepository.save(log);
-
-        return enderecoDTO;
+            return ResponseEntity.ok(enderecoDTO);
+        } catch (Exception e) {
+            // Se ocorrer um erro, retornamos um erro genérico
+            return ResponseEntity.status(500).body(null);
+        }
     }
 }

@@ -1,6 +1,7 @@
 package br.com.hub.correios.service;
 
 import br.com.hub.correios.CorreiosApplication;
+import br.com.hub.correios.controller.dto.EnderecoDTO;
 import br.com.hub.correios.exceptions.NoContentException;
 import br.com.hub.correios.exceptions.NoReadyException;
 import br.com.hub.correios.model.Endereco;
@@ -9,12 +10,16 @@ import br.com.hub.correios.model.Status;
 import br.com.hub.correios.repository.EnderecoRepository;
 import br.com.hub.correios.repository.EnderecoStatusRepository;
 import br.com.hub.correios.repository.SetupRepository;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class CorreiosService {
@@ -30,20 +35,43 @@ public class CorreiosService {
     @Autowired
     private SetupRepository setupRepository;
 
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private final String viaCepUrl = "https://viacep.com.br/ws/{cep}/json/";
+
     public Status getStatus() {
         return this.enderecoStatusRepository.findById(EnderecoStatus.DEFAULT_ID)
                 .orElse(new EnderecoStatus(EnderecoStatus.DEFAULT_ID, Status.NEED_SETUP))
                 .getStatus();
     }
 
-    public Endereco getEnderecoZipCode(String zipCode) throws NoContentException, NoReadyException{
+    public EnderecoDTO getEnderecoZipCode(String zipCode) throws Exception {
 
-        if(!this.getStatus().equals(Status.READY)){
-            throw new NoReadyException();
-        }
+        // Fazendo a requisição para a API ViaCEP passando o CEP como parâmetro
+        String url = viaCepUrl;
 
-        return enderecoRepository.findById(zipCode)
-                .orElseThrow(NoContentException::new);
+        // Usando RestTemplate para consumir a API do ViaCEP
+        String response = restTemplate.getForObject(url, String.class, zipCode);
+
+        EnderecoDTO enderecoDTO = converterJsonParaEnderecoDTO(response);
+        return enderecoDTO;
+    }
+
+    private EnderecoDTO converterJsonParaEnderecoDTO(String json) throws Exception {
+
+        JsonNode jsonNode = objectMapper.readTree(json);
+
+        String zipCode = jsonNode.get("cep").asText();
+        String rua = jsonNode.get("logradouro").asText();
+        String distrito = jsonNode.get("bairro").asText();
+        String cidade = jsonNode.get("localidade").asText();
+        String estado = jsonNode.get("uf").asText();
+
+        return new EnderecoDTO(zipCode, rua, distrito, cidade, estado);
     }
 
     private void saveServiceStatus(Status status) {
@@ -67,7 +95,6 @@ public class CorreiosService {
 
     public void setup() throws Exception {
 
-//        logger.info("---" + a);
         logger.info("---");
         logger.info("--- STARTING SETUP");
         logger.info("--- Please wait... This may take a few minutes");
@@ -78,7 +105,6 @@ public class CorreiosService {
             this.saveServiceStatus(Status.SETUP_RUNNING);
 
             try{
-                // this.enderecoRepository.saveAll(this.setupRepository.getFromOrigin());
                 this.enderecoRepository.saveAll(this.setupRepository.listAdressesFromOrigin());
             } catch (Exception exc){
                 this.saveServiceStatus(Status.NEED_SETUP);

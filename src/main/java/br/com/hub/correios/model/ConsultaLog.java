@@ -30,8 +30,6 @@ public class ConsultaLog {
         this.dataConsulta = dataConsulta;
     }
 
-    // Getters and Setters
-
     public Long getId() {
         return id;
     }
